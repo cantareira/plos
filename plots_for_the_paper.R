@@ -1,4 +1,5 @@
 source("data_preparation.r")
+source("functions.R")
 require(ggplot2)
 require(grid)
 library(extrafont)
@@ -20,14 +21,31 @@ t1 <- theme_bw(base_size=20)+
 escala <- scale_color_gradient(breaks=c(1000,2000,3000),
                                labels=format(min(time(cant.plos))+c(1000,2000,3000),"%Y"),
                                low=cores[1], high="darkblue")
-## Volume x rainfall
-f1 <- ggplot(Y, aes(pluv.m, v.rel, colour=1:nrow(Y))) +
+
+## Time series of volume, rainfall, inflow and outflow
+
+
+## Volume x rainfall observed and theoretical
+f1a <- ggplot(Y, aes(pluv.m, v.rel, colour=1:nrow(Y))) +
     geom_point()+
         geom_path()+
             xlab("Mean rainfall in previous 30 days (mm)") +
-                ylab("Stored water (% operational volume)")+
-                    escala
-print(f1+t1)
+                ylab("Stored water (% operational volume)")+ escala + t1 +
+                    xlim(-0.1,22) +
+                        theme(legend.position=c(0.92,0.75))
+
+Yt <- read.table("data_funil.dat", col.names=c("time", "v.rel", "pluv.m"))
+
+f1b <- ggplot(Yt, aes(pluv.m, v.rel)) + geom_path()
+
+f1b.inset <- ggplotGrob(f1b + xlab("") + ylab("") +
+                            scale_x_continuous(labels=NULL, breaks=NULL) +
+                                scale_y_continuous(labels=NULL, breaks=NULL) +
+                                    theme_bw() +
+                                        theme(plot.margin=unit(c(-0.5,-0.5,-0.5,-.5),"in")))
+
+f1 <- f1a + annotation_custom(grob = f1b.inset, xmin = 13, xmax = 21, ymin = -8, ymax = 25)
+f1
 
 ## Outflow x volume
 f2 <- Y %>%
@@ -91,10 +109,10 @@ f6 + t1
 ###################################################
 ## Saving plot images
 ###################################################
-ggsave("volumeXrain.pdf", plot= f1 + t1)
-ggsave("ouflowXvolume.pdf", plot= f2 + t1)
-ggsave("inflow-rainXvolume.pdf", plot= f3 + t1+ theme (legend.position=c(0.15,0.85)))
-ggsave("sde-fit.pdf", plot= f6 + t1, width=12, height=8, units="in")
+ggsave("volumeXrain.pdf", plot= f1, width=8, height=6)
+ggsave("outflowXvolume.pdf", plot= f2 + t1, width=8, height=8)
+ggsave("inflow-rainXvolume.pdf", plot= f3 + t1+ theme (legend.position=c(0.15,0.85)), width=8, height=8)
+ggsave("sde-fit.pdf", plot= f6 + t1, width=12, height=8)
 pdf("conditional-var.pdf", width=12, height=8)
 multiplot(f5b, f5a, cols=2)
 dev.off()
