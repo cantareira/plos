@@ -2,12 +2,17 @@ source("data_preparation.r")
 source("functions.R")
 require(ggplot2)
 require(grid)
-library(extrafont)
 library(earlywarnings)
-font_import()
 
+
+## Create the pomp object with the models
+c1y.m1 <- create.pomp.3p(cant.plos.1y)
+c1y.m0 <- create.pomp.3p.sc(cant.plos.1y)
+## Load the fitted models and simulated plausibility intervals
+load("fitted_bsmc.RData")
+## English locale for time (months, days, etc)
 Sys.setlocale(category="LC_TIME", "en_US.UTF-8")
-## Inflow, outflow and volume
+## Data frame with inflow, outflow and volume
 Y <- as.data.frame(cant.plos)
 cores <- cm.colors(nrow(Y))
 ## Common themes and scales
@@ -18,12 +23,41 @@ t1 <- theme_bw(base_size=20)+
           axis.line=element_line(size=1.1),
           legend.position=c(.9,0.2),
           legend.title=element_text(size=0))
+
+t2 <- theme_bw(base_size=20)+
+    theme(axis.title.x = element_text(vjust=-1.1),
+          axis.title.y = element_text(vjust=2)
+          )
+
 escala <- scale_color_gradient(breaks=c(1000,2000,3000),
                                labels=format(min(time(cant.plos))+c(1000,2000,3000),"%Y"),
                                low=cores[1], high="darkblue")
 
 ## Time series of volume, rainfall, inflow and outflow
+Yz <- cant.plos %>%
+        as.data.frame() %>%
+            mutate(inflow.m = runmean(inflow, k=30, align="right")/(24*3600),
+                   outflow.m = runmean(outflow, k=30, align="right")/(24*3600)) %>%
+                select(v.rel, pluv.m, inflow.m, outflow.m) %>%
+                    zoo(time(cant.plos))
 
+pdf("volume-rain-flow-ts.pdf", width=12, height=8)
+par(mfcol=c(2,1), mar=c(0,7.2,0,6.5), las=1, oma=c(4,4,.5,.5), tcl=-.25, 
+    mgp=c(5,1,0), cex.lab=2, cex.axis=1.8, lwd=2.5)
+plot(Yz[,"pluv.m"], type="h", col="gray", axes=FALSE, ylab="")
+par(las=0)
+mtext("Rainfall (mm)", side=4, line=3.8, cex=2)
+par(las=1)
+axis(4)
+par(new=TRUE)
+plot(Yz[,"v.rel"], lwd=3, col="blue", axes=FALSE, ylab="Volume (%)")
+axis(2, at=seq(0,100, by=20))
+par(new=FALSE)
+plot(Yz[,"inflow.m"], type="h", col="gray",
+     ylab=expression(paste("Water flow (" , m^3*s^-1 ,")", sep="")),
+     ylim=c(0,max(Yz[,c("outflow.m","inflow.m")])))
+lines(Yz[,"outflow.m"], lwd=3, col="blue")
+dev.off()
 
 ## Volume x rainfall observed and theoretical
 f1a <- ggplot(Y, aes(pluv.m, v.rel, colour=1:nrow(Y))) +
