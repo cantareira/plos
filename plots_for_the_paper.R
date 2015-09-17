@@ -148,7 +148,7 @@ ggsave("outflowXvolume.pdf", plot= f2 + t1, width=8, height=8)
 ggsave("inflow-rainXvolume.pdf", plot= f3 + t1+ theme (legend.position=c(0.15,0.85)), width=8, height=8)
 ggsave("sde-fit.pdf", plot= f6 + t1, width=12, height=8)
 ## To ensure transparency in the publsihed paper - PLOS asks for eps or tiff but eps does not support transparency
-ggsave("sde-fit.tiff", plot= f6 + t1, width=7.5, height=5, type="cairo")
+ggsave("sde-fit.tiff", plot= f6 + t1, width=7.5, height=5, type="cairo", compression = "lzw")
 pdf("conditional-var.pdf", width=12, height=8)
 multiplot(f5b, f5a, cols=2)
 dev.off()
